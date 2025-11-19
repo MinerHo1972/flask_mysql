@@ -1,0 +1,36 @@
+[Unit]
+Description=Flask MySQL Web App
+Documentation=https://github.com/your-repo/flask-mysql-app
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/flask_mysql_app
+Environment=PATH=/opt/flask_mysql_app/venv/bin
+EnvironmentFile=/opt/flask_mysql_app/.env
+ExecStart=/opt/flask_mysql_app/venv/bin/python flask_mysql.py
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# 安全设置
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/flask_mysql_app /tmp
+
+# 日志设置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=flask-mysql-app
+
+[Install]
+WantedBy=multi-user.target

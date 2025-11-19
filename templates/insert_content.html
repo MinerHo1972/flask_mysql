@@ -1,0 +1,16 @@
+<div id="input-container">
+    <!-- 默认显示10行输入框 -->
+    {% for i in range(10) %}
+    <div class="input-row">
+        <span class="row-number">{{ i + 1 }}.</span>
+        <input type="text" name="filename" placeholder="请输入文件名">
+        <button class="add-btn" onclick="addRow(this)">添加</button>
+        <button class="delete-btn" onclick="deleteRow(this)">删除</button>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="action-buttons">
+    <button class="insert-btn" onclick="submitAllRecords()">添加记录</button>
+    <button class="clear-btn" onclick="clearAllInputs()">清除本页</button>
+</div>

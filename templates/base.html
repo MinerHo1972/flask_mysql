@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid transparent;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+            border-bottom-color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .pagination a {
+            margin: 0 5px;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            color: #007bff;
+        }
+        .pagination a.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .search-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .search-form input {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .search-form button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-form select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .search-form label {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #input-container {
+            display: block;
+            width: 100%;
+        }
+        .row-number {
+            min-width: 30px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .input-row input {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .input-row button {
+            padding: 8px 12px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .add-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .action-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .action-buttons button {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .insert-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .clear-btn {
+            background-color: #ffc107;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文件管理系统</h1>
+
+        <!-- Flash消息显示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="
+                        padding: 10px;
+                        margin-bottom: 20px;
+                        border-radius: 4px;
+                        {% if category == 'error' %}
+                            background-color: #f8d7da;
+                            color: #721c24;
+                            border: 1px solid #f5c6cb;
+                        {% else %}
+                            background-color: #d4edda;
+                            color: #155724;
+                            border: 1px solid #c3e6cb;
+                        {% endif %}
+                    ">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('search')">查询记录</button>
+            <button class="tab" onclick="switchTab('insert')">插入记录</button>
+        </div>
+
+        <div id="search" class="tab-content active">
+            {% include 'search_content.html' %}
+        </div>
+
+        <div id="insert" class="tab-content">
+            {% include 'insert_content.html' %}
+        </div>
+    </div>
+
+    <script>
+        // 确保函数定义在全局作用域
+        window.switchTab = function(tabName) {
+            // 切换标签页按钮状态
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.includes(tabName === 'search' ? '查询' : '插入')) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // 切换内容显示
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+        };
+
+        // 动态添加输入框行的函数
+        window.addRow = function(afterElement) {
+            const container = document.getElementById('input-container');
+            if (!container) {
+                alert('找不到输入容器！');
+                return;
+            }
+
+            // 获取当前所有行的数量，用于生成新的序号
+            const allRows = container.querySelectorAll('.input-row');
+            const newNumber = allRows.length + 1;
+
+            // 创建新行，使用innerHTML确保样式正确应用
+            const newRowHTML = `
+                <div class="input-row" style="display: flex; align-items: center; margin-bottom: 10px; width: 100%;">
+                    <span class="row-number" style="min-width: 30px; font-weight: bold; color: #007bff;">${newNumber}.</span>
+                    <input type="text" name="filename" placeholder="请输入文件名" style="flex: 1; padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button class="add-btn" onclick="addRow(this)" style="padding: 8px 12px; margin-left: 5px; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; color: white;">添加</button>
+                    <button class="delete-btn" onclick="deleteRow(this)" style="padding: 8px 12px; margin-left: 5px; border: none; border-radius: 4px; cursor: pointer; background-color: #dc3545; color: white;">删除</button>
+                </div>
+            `;
+
+            // 创建临时div来解析HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newRowHTML.trim();
+            const newRow = tempDiv.firstChild;
+
+            // 找到插入位置
+            let referenceNode = null;
+            if (afterElement) {
+                // 找到当前按钮所在的行
+                const currentRow = afterElement.closest('.input-row');
+                if (currentRow) {
+                    referenceNode = currentRow.nextSibling;
+                }
+            }
+
+            // 插入新行
+            if (referenceNode) {
+                container.insertBefore(newRow, referenceNode);
+                console.log('Row inserted after current row');
+            } else {
+                container.appendChild(newRow);
+                console.log('Row appended to container');
+            }
+
+            // 强制重新计算布局
+            setTimeout(() => {
+                // 更新所有行的序号
+                updateRowNumbers();
+                console.log('Total rows now:', container.querySelectorAll('.input-row').length);
+            }, 10);
+        };
+
+        // 删除输入框行的函数
+        window.deleteRow = function(element) {
+            const row = element.parentElement;
+            if (row) {
+                row.remove();
+                // 更新所有行的序号
+                updateRowNumbers();
+            }
+        };
+
+        // 更新所有行序号的函数
+        window.updateRowNumbers = function() {
+            const container = document.getElementById('input-container');
+            if (container) {
+                const allRows = container.querySelectorAll('.input-row');
+                allRows.forEach((row, index) => {
+                    const rowNumber = row.querySelector('.row-number');
+                    if (rowNumber) {
+                        rowNumber.textContent = (index + 1) + '.';
+                    }
+                });
+            }
+        };
+
+        // 清空所有输入框
+        window.clearAllInputs = function() {
+            const inputs = document.querySelectorAll('#input-container input[type="text"]');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+        };
+
+        // 提交所有记录
+        window.submitAllRecords = function() {
+            const inputs = document.querySelectorAll('#input-container input[type="text"]');
+            const filenames = [];
+
+            inputs.forEach(input => {
+                if (input.value.trim()) {
+                    filenames.push(input.value.trim());
+                }
+            });
+
+            if (filenames.length === 0) {
+                alert('请至少输入一个文件名！');
+                return;
+            }
+
+            // 显示正在提交的提示
+            const submitBtn = document.querySelector('.insert-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '正在提交...';
+            submitBtn.disabled = true;
+
+            // 使用Fetch API提交数据
+            const formData = new FormData();
+            filenames.forEach(filename => {
+                formData.append('filenames', filename);
+            });
+
+            fetch('/insert', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => {
+                // 恢复按钮状态
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态: ${response.status}`);
+                }
+
+                // 尝试解析JSON响应
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // 显示成功消息，包含插入的记录数
+                    showTemporaryMessage(data.message, 'success');
+
+                    // 清空已成功提交的输入框
+                    inputs.forEach(input => {
+                        if (input.value.trim()) {
+                            input.value = '';
+                        }
+                    });
+                } else {
+                    // 显示错误消息
+                    showTemporaryMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                // 恢复按钮状态
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+
+                console.error('Error:', error);
+                showTemporaryMessage('提交失败，请重试', 'error');
+            });
+        };
+
+        // 清空搜索输入框和搜索结果
+        window.clearSearch = function() {
+            // 清空搜索输入框
+            const param1Input = document.getElementById('param1Input');
+            const param2Input = document.getElementById('param2Input');
+
+            if (param1Input) param1Input.value = '';
+            if (param2Input) param2Input.value = '';
+
+            // 清空搜索结果显示区域
+            const searchResults = document.getElementById('searchResults');
+            if (searchResults) {
+                searchResults.innerHTML = '<p>请输入搜索条件来查询记录。</p>';
+            }
+
+            // 清空分页信息
+            const pagination = document.querySelector('.pagination');
+            if (pagination) {
+                pagination.style.display = 'none';
+            }
+        };
+
+        // 处理每页显示行数变化
+        window.changePerPage = function() {
+            const perPageSelect = document.getElementById('per_page');
+            const searchForm = document.getElementById('searchForm');
+
+            if (perPageSelect && searchForm) {
+                // 获取当前搜索参数
+                const param1Input = document.getElementById('param1Input');
+                const param2Input = document.getElementById('param2Input');
+
+                // 构建新的URL参数
+                const params = new URLSearchParams();
+
+                if (param1Input && param1Input.value.trim()) {
+                    params.set('param1', param1Input.value.trim());
+                }
+                if (param2Input && param2Input.value.trim()) {
+                    params.set('param2', param2Input.value.trim());
+                }
+                params.set('per_page', perPageSelect.value);
+                params.set('page', '1'); // 重置到第一页
+
+                // 重定向到新的URL
+                const newUrl = '?' + params.toString();
+                window.location.href = newUrl;
+            }
+        };
+
+        // 显示临时消息的函数
+        window.showTemporaryMessage = function(message, type) {
+            // 创建消息元素
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 4px; font-weight: bold; z-index: 1000; min-width: 250px; text-align: center;';
+
+            if (type === 'success') {
+                messageDiv.style.backgroundColor = '#d4edda';
+                messageDiv.style.color = '#155724';
+                messageDiv.style.border = '1px solid #c3e6cb';
+            } else {
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.border = '1px solid #f5c6cb';
+            }
+
+            messageDiv.textContent = message;
+
+            // 添加到页面
+            document.body.appendChild(messageDiv);
+
+            // 3秒后自动移除消息
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 3000);
+        };
+
+        // 全选/取消全选复选框
+        window.toggleAllCheckboxes = function() {
+            const selectAll = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.recordCheckbox');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+
+            updateDeleteButton();
+        };
+
+        // 更新删除按钮状态
+        window.updateDeleteButton = function() {
+            const checkboxes = document.querySelectorAll('.recordCheckbox:checked');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const allCheckboxes = document.querySelectorAll('.recordCheckbox');
+
+            if (checkboxes.length > 0) {
+                deleteBtn.style.display = 'inline-block';
+                deleteBtn.disabled = false;
+            } else {
+                deleteBtn.style.display = 'none';
+                deleteBtn.disabled = true;
+            }
+
+            // 更新全选框状态
+            if (allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length;
+                selectAllCheckbox.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+            }
+        };
+
+        // 删除选中记录
+        window.deleteSelectedRecords = function() {
+            const checkboxes = document.querySelectorAll('.recordCheckbox:checked');
+
+            if (checkboxes.length === 0) {
+                showTemporaryMessage('请先选择要删除的记录！', 'error');
+                return;
+            }
+
+            // 获取所有选中的记录文件名
+            const selectedFilenames = Array.from(checkboxes).map(cb => cb.value);
+
+            // 调试信息：检查选中的文件名
+            console.log('选中的文件名:', selectedFilenames);
+
+            // 检查是否有空值或无效值
+            const validFilenames = selectedFilenames.filter(filename => filename && filename.trim() !== '');
+            if (validFilenames.length === 0) {
+                showTemporaryMessage('选中的记录没有有效的文件名！', 'error');
+                return;
+            }
+
+            console.log('有效的文件名:', validFilenames);
+
+            // 确认删除
+            if (confirm(`确定要删除选中的 ${validFilenames.length} 条记录吗？此操作不可撤销！`)) {
+                // 显示正在删除的提示
+                const deleteBtn = document.getElementById('deleteSelectedBtn');
+                const originalText = deleteBtn.textContent;
+                deleteBtn.textContent = '正在删除...';
+                deleteBtn.disabled = true;
+
+                // 发送删除请求
+                fetch('/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ids: validFilenames
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 恢复按钮状态
+                    deleteBtn.textContent = originalText;
+                    deleteBtn.disabled = false;
+
+                    if (data.success) {
+                        showTemporaryMessage(data.message, 'success');
+                        // 刷新页面以显示更新后的结果
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showTemporaryMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // 恢复按钮状态
+                    deleteBtn.textContent = originalText;
+                    deleteBtn.disabled = false;
+                    showTemporaryMessage('删除失败，请重试', 'error');
+                });
+            }
+        };
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
