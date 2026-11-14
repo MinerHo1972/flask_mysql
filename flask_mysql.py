@@ -24,6 +24,7 @@ db = SQLAlchemy(app)
 def index():
     results = []
     columns = []
+    total_count = 0
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
 
@@ -46,7 +47,8 @@ def index():
             total_pages = (total_count + per_page - 1) // per_page
 
             # 添加 LIMIT 和 OFFSET 实现分页
-            sql = text(f"SELECT * FROM myfiles WHERE filename LIKE CONCAT('%', :param1, '%', :param2, '%') LIMIT :limit OFFSET :offset")
+            # 按入库时间倒序（id 自增，越大越新）后再分页
+            sql = text(f"SELECT filename FROM myfiles WHERE filename LIKE CONCAT('%', :param1, '%', :param2, '%') ORDER BY id DESC LIMIT :limit OFFSET :offset")
             result = conn.execute(sql, {
                 'param1': param1,
                 'param2': param2,
@@ -70,7 +72,8 @@ def index():
                          total_pages=total_pages,
                          per_page=per_page,
                          param1=param1,
-                         param2=param2)
+                         param2=param2,
+                         total_count=total_count)
 
 @app.route('/insert', methods=['POST'])
 def insert_records():
