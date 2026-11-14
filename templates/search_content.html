@@ -63,7 +63,7 @@
         {% endif %}
     </div>
 
-    <p>共 {{ (total_pages - 1) * per_page + results|length }} 条记录，第 {{ page }}/{{ total_pages }} 页，每页显示 {{ per_page }} 条</p>
+    <p>共 {{ total_count }} 条记录，第 {{ page }}/{{ total_pages }} 页，每页显示 {{ per_page }} 条</p>
     </div>
 {% elif param1 or param2 %}
     <div id="searchResults">
